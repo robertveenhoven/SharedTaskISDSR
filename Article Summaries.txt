@@ -28,7 +28,7 @@ Basile 2017 : N-GrAM
 	Data: 
 		11400 sets of tweets
 
-Martinc 2017: 
+Martinc 2017: NN-FT/U
 	2nd place at PAN 2017
 		Best at gender ID task in Arabic
 	System:
@@ -45,4 +45,28 @@ Martinc 2017:
 				Character flood counts
 				Word lists: language variety specific
 		TF-IDF weighting
-	
+
+Miura 2017:
+	3rd place at PAN 2017 (Gender task)  
+	2 models:
+		NN-FT
+			System:
+				CNN, RNN
+				Max pooling
+				Attention Mechanism
+			Features:
+				Word Embeddings (w/ RNN)
+				Character Embeddings (w/ CNN)
+			Weight matrices
+		NN-FU
+			largely same as NN-Ft, but with different attention mechanism
+
+Tellez 2017:
+	4th place at PAN 2017 (Gender Task
+	System:
+		SVM CLassifier (liblinear)
+		Features:
+			word n-grams (n= 1,2,3)
+			character nb-grams (n= 1,3,5,7,9)
+			skipgrams
+		Weighting scheme: TF-IDF
