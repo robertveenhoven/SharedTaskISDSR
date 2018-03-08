@@ -1,4 +1,4 @@
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn import svm
 import string
 from nltk.corpus import stopwords
@@ -16,35 +16,32 @@ def read_corpus(corpus_file):
 				try:
 					splittedline = line.split('\t')
 					tokens = tknzr.tokenize(splittedline[0])
-					for idx, token in enumerate(tokens):
-						if token[0]=='@':
-							tokens[idx] = 'USER'
-						elif token[:4]=='http':
-							tokens[idx] = 'URL'	
-						elif token[:4]== 't.co':
-							tokens[idx] = 'URL'	
 					nopunc = [char for char in tokens if char not in string.punctuation]
 					nopunc = ' '.join(nopunc)
-					filtered = [word for word in nopunc.split() if word.lower() not in stopwords.words('english')]
+					filtered = [word.lower() for word in nopunc.split() if word.lower() not in stopwords.words('english')]
+					for idx, token in enumerate(filtered):
+						if token[0]=='@':
+							filtered[idx] = 'USER'
+						elif token[:4]=='http':
+							filtered[idx] = 'URL'	
+						elif token[:4]== 't.co':
+							filtered[idx] = 'URL'	
 					filtered= ' '.join(filtered)
 					documents.append(filtered)
-					#print(len(filtered))
 					labels.append(splittedline[1].strip('\n'))
-					#print(splittedline[1].strip('\n'))
 					
 				except:
 					continue
 					
 	print("read corpus")
-	print(len(documents),len(labels))
 	return documents, labels
 
 def SVMClassifier(X,Y):
-	vec = CountVectorizer(tokenizer=identity)
+	vec = TfidfVectorizer(min_df=2, sublinear_tf=True, use_idf =True, tokenizer=identity)
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.25, random_state=0)
 	data = vec.fit(X_train)
 	X_train_transformed = data.transform(X_train)
-	classifier= svm.SVC(C=1.0, kernel='rbf').fit(X_train_transformed , y_train)
+	classifier= svm.LinearSVC(C=1.0).fit(X_train_transformed , y_train)
 	X_test_transformed = data.transform(X_test)
 	
 	return cross_val_score(classifier, X_test_transformed, y_test)
