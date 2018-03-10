@@ -1,5 +1,24 @@
 import sys
 import xml.etree.ElementTree as ET
+import string
+from nltk.corpus import stopwords
+from nltk.tokenize import TweetTokenizer
+
+
+def preProcess(text,language):
+	tknzr = TweetTokenizer()
+	tokens = tknzr.tokenize(text)
+	nopunc = [char for char in tokens if char not in string.punctuation]
+	filtered = [word.lower() for word in ' '.join(nopunc).split() if word.lower() not in stopwords.words(language)]
+	for idx, token in enumerate(filtered):
+		if token[0]=='@':
+			filtered[idx] = 'USER'
+		elif token[:4]=='http':
+			filtered[idx] = 'URL'	
+		elif token[:4]== 't.co':
+			filtered[idx] = 'URL'		
+			
+	return ' '.join(filtered)
 
 def main(argv):
 	x=0
@@ -12,6 +31,7 @@ def main(argv):
 			truthfile= open(sys.argv[1]+item+'/'+item+'.txt','r')
 			for line in truthfile:
 				iduser, gender = line.split(':::')
+				print(item,iduser)
 				workfile = open(sys.argv[1]+item+'/text/'+iduser+'.xml','r')
 				tree = ET.parse(workfile)
 				root = tree.getroot()
@@ -19,23 +39,22 @@ def main(argv):
 				if item == 'en':
 					x+=1
 					for elem in root.findall('documents/document'):
-						tokens=elem.text.split()
-						outputEN.write(' '.join(tokens)+' ')
+						processed = preProcess(elem.text, 'english')
+						outputEN.write(processed+' ')
 					outputEN.write('\t'+gender)	
 				if item == 'es':	
 					for elem in root.findall('documents/document'):
-						tokens=elem.text.split()
-						outputSPA.write(' '.join(tokens)+' ')
+						processed = preProcess(elem.text, 'spanish')
+						outputSPA.write(processed+' ')
 					outputSPA.write('\t'+gender)			
 				if item == 'ar':
 					for elem in root.findall('documents/document'):
-						tokens=elem.text.split()
-						outputARAB.write(' '.join(tokens)+' ')
+						processed = preProcess(elem.text, 'arabic')
+						outputARAB.write(processed+' ')
 					outputARAB.write('\t'+gender)
-		print(x)
 		outputEN.close()
 		outputSPA.close()
 		outputARAB.close()
-	
+		
 if __name__ == "__main__":
 	main(sys.argv)	
