@@ -10,11 +10,40 @@ def preProcess(text,language, dictionary):
 	tokens = tknzr.tokenize(text)
 	nopunc = [char for char in tokens if char not in string.punctuation]
 	filtered = [word.lower() for word in ' '.join(nopunc).split() if word.lower() not in stopwords.words(language)]
+	
 	for idx, token in enumerate(filtered):
-		if token == 'abcde':
-			key = 'ABCDE'+str(filtered[idx+1])
-			filtered[idx] = dictionary[key]
-			del filtered[idx+1]
+		if token == 'abcdea':
+			key = 'ABCDEA'+str(filtered[idx+1])
+			try:
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]
+			except:
+				key = 'ABCDEA'+str(filtered[idx+1]+str(filtered[idx+2]))
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]
+				del filtered[idx+2]
+		if token == 'abcdeb':
+			key = 'ABCDEB'+str(filtered[idx+1])
+			try:
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]
+			except:
+				key = 'ABCDEB'+str(filtered[idx+1]+str(filtered[idx+2]))
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]
+				del filtered[idx+2]
+								
+		if token == 'abcdec':
+			key = 'ABCDEC'+str(filtered[idx+1])
+			try:
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]				
+			except:
+				key = 'ABCDEC'+str(filtered[idx+1]+str(filtered[idx+2]))
+				filtered[idx] = dictionary[key]
+				del filtered[idx+1]
+				del filtered[idx+2]
+									
 		if token == "user":
 			filtered[idx] = 'USER'
 		elif token =='url':
@@ -81,7 +110,7 @@ def main(argv):
 			OutputMap, processlanguage = 'spa', 'spanish'
 		OutputFile = 'Traindata/'+OutputMap+'/traindata'+InputLan+'to'+OutputLan+'.txt'
 		Writefile = open(OutputFile,'wt')  
-		truthfile= open(sys.argv[1]+InputLan+'/'+InputLan+'.txt','r')
+		truthfile= open(sys.argv[1]+InputLan+'/'+InputLan+'161.txt','r')
 		for line in truthfile:
 			EmojiDict = {}
 			wordsUser, wordsUser2, wordsUser3, wordsUser4 = [], [], [], []
@@ -101,11 +130,7 @@ def main(argv):
 				elif y >= 33 and y <67:
 					wordsUser2.append(elem.text+" ")					
 				else:
-					wordsUser.append(elem.text+" ")
-			#print(len(wordsUser))
-			#print(len(wordsUser2))	
-			#print(len(wordsUser3))	
-			#print(len(wordsUser4))				
+					wordsUser.append(elem.text+" ")		
 			stringUser = " ".join(wordsUser)
 			tokens = tknzr.tokenize(stringUser)
 			for token in tokens:
@@ -114,10 +139,10 @@ def main(argv):
 					"A","a","B","b","C","c","D","d","E","e","F",
 					"f","G","g","H","h","I","i","J","j","K","k","L","l","M","m","N","n","O","o","P","p","Q","q","R","r","S",
 					"s","T","t","U","u","V","v","W","w","X","x","Y","y","Z","z","‘","’","’’","‘‘","…","“","”","•","–"] and token not in string.punctuation:
-					EmojiDict.update({"ABCDE"+str(RandomI):token})
-					tokens[RandomI] = "ABCDE"+str(RandomI)
+					#print(RandomI, token)		
+					EmojiDict.update({"ABCDEA"+str(RandomI):token})
+					tokens[RandomI] = "ABCDEA"+str(RandomI)
 			TokenizedUser = preProcess2(tokens)
-			#print(TokenizedUser)
 			Translated = Translator().translate(TokenizedUser, src=InputLan, dest=OutputLan)
 			#print("1 works")
 			stringUser = " ".join(wordsUser2)
@@ -128,10 +153,10 @@ def main(argv):
 					"A","a","B","b","C","c","D","d","E","e","F",
 					"f","G","g","H","h","I","i","J","j","K","k","L","l","M","m","N","n","O","o","P","p","Q","q","R","r","S",
 					"s","T","t","U","u","V","v","W","w","X","x","Y","y","Z","z","‘","’","’’","‘‘","…","“","”","•","–"] and token not in string.punctuation:
-					EmojiDict.update({"ABCDE"+str(RandomI2):token})
-					tokens[RandomI2] = "ABCDE"+str(RandomI2)
+					#print(RandomI2, token)	
+					EmojiDict.update({"ABCDEB"+str(RandomI2):token})
+					tokens[RandomI2] = "ABCDEB"+str(RandomI2)
 			TokenizedUser2 = preProcess2(tokens)
-			#print(TokenizedUser2)
 			Translated2 = Translator().translate(TokenizedUser2, src=InputLan, dest=OutputLan)
 			#print("2 works")
 			stringUser = " ".join(wordsUser3)
@@ -142,8 +167,9 @@ def main(argv):
 					"A","a","B","b","C","c","D","d","E","e","F",
 					"f","G","g","H","h","I","i","J","j","K","k","L","l","M","m","N","n","O","o","P","p","Q","q","R","r","S",
 					"s","T","t","U","u","V","v","W","w","X","x","Y","y","Z","z","‘","’","’’","‘‘","…","“","”","•","–"] and token not in string.punctuation:
-					EmojiDict.update({"ABCDE"+str(RandomI3):token})
-					tokens[RandomI3] = "ABCDE"+str(RandomI3)
+					#print(RandomI3, token)
+					EmojiDict.update({"ABCDEC"+str(RandomI3):token})
+					tokens[RandomI3] = "ABCDEC"+str(RandomI3)
 			TokenizedUser3 = preProcess2(tokens)
 			#print(TokenizedUser2)
 			Translated3 = Translator().translate(TokenizedUser3, src=InputLan, dest=OutputLan)
