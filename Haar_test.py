@@ -2,7 +2,8 @@
 # Experimental Haar classifier
 #=============================================================
 # Can detect features in pictures
-# Usage: Haar_test.py {path to image} {feature} {CV Folder} {scaleFactor}
+# Usage: python Haar_test.py {path to /photo folder} {feature} {CV Folder} {scaleFactor}
+#   Path to /photo (REQUIRED) (Ex: /home/unseen/Documents/University/SharedTask/PAN2018/en/photo
 # 	Feature (REQUIRED): 'eye' OR 'face'
 #   CV Folder (REQUIRED): path to the OpenCV folder (Ex: '/home/unseen/anaconda3/share/OpenCV'
 #	scaleFactor(OPTIONAL): value from 1.1 up to and including 1.9: adapt to alter recognition window
@@ -14,6 +15,11 @@
 # Set Up
 import sys
 import cv2 #openCV library
+
+import os
+os.path
+import csv
+
 #import matplotlib.pyplot as plt # plotting figures
 #%matplotlib inline
 
@@ -38,31 +44,47 @@ def detect_feature(f_cascade, colored_img, scaleFactor = 1.1):
 
     #go over list of faces and draw them as rectangles on original colored img
     for (x, y, w, h) in features:
-      cv2.rectangle(img_copy, (x, y), (x+w, y+h), (0, 255, 0), 2)              
+    	cv2.rectangle(img_copy, (x, y), (x+w, y+h), (0, 255, 0), 2)
+     
+	# return img_copy
+    return len(features)
 
-    return img_copy
+#-------------------------------------------------------------
+def all_file_content(directory_name):
+    file_list = os.listdir(directory_name)
+    for file_name in file_list:
+        yield cv2.imread(os.path.join(directory_name, file_name))
+
+
 
 #=============================================================
 def main(argv):
 
 	#loadimage 
-	test = cv2.imread(sys.argv[1])
+	mainDirPath = sys.argv[1]
 	feature = sys.argv[2]
 	cvFolder = sys.argv[3]
 
-
+	#-------------------------------------------------------------
 	#load cascade classifier training files for haarcascade
 	if feature ==  'face':
 		haar_cascade = cv2.CascadeClassifier(cvFolder +'/haarcascades/haarcascade_frontalface_alt.xml')
 	else:
 		haar_cascade = cv2.CascadeClassifier(cvFolder +'/haarcascades/haarcascade_eye.xml')
 
-	#call our function to detect faces
-	if len (sys.argv) > 4:
-		features_detected_img = detect_feature(haar_cascade, test, 
-scaleFactor=float(sys.argv[4]))
-	else:
-		features_detected_img = detect_feature(haar_cascade, test)
+	#-------------------------------------------------------------
+	#call our function to detect features
+	use_list = os.listdir(mainDirPath)
+	for user_name in use_list:
+		userFeatureCount = 0
+		for file_content in all_file_content(os.path.join(mainDirPath, user_name)):
+			if len (sys.argv) > 4:
+				userFeatureCount += detect_feature(haar_cascade, file_content, scaleFactor=float(sys.argv[4]))
+			else: 
+				userFeatureCount += detect_feature(haar_cascade, file_content)
+		print ("Total features for", user_name, "is:", userFeatureCount)
+
+
 
 	#convert image to RGB and show image 
 	#plt.imshow(convertToRGB(features_detected_img))
