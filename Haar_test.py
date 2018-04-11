@@ -75,16 +75,22 @@ def main(argv):
 	#-------------------------------------------------------------
 	#call our function to detect features
 	use_list = os.listdir(mainDirPath)
+	userCountList = [["UserID", "Feature counts"]]
 	for user_name in use_list:
-		userFeatureCount = 0
+		featureCountList = [user_name]
 		for file_content in all_file_content(os.path.join(mainDirPath, user_name)):
-			if len (sys.argv) > 4:
-				userFeatureCount += detect_feature(haar_cascade, file_content, scaleFactor=float(sys.argv[4]))
-			else: 
-				userFeatureCount += detect_feature(haar_cascade, file_content)
-		print ("Total features for", user_name, "is:", userFeatureCount)
-
-
+		    featureCount = detect_feature(haar_cascade, file_content)
+		    featureCountList.append(featureCount)
+		userCountList.append(featureCountList)
+		print ("Total features for", user_name, "is:", str(sum(featureCountList[1:])))
+	
+	# store results in csv file
+	fileName = 'HaarFeatures.csv'
+	myFile = open('HaarFeatures.csv', 'w')
+	with myFile:
+		writer = csv.writer(myFile)
+		writer.writerows(userCountList)
+	print("Results written to", fileName)
 
 	#convert image to RGB and show image 
 	#plt.imshow(convertToRGB(features_detected_img))
