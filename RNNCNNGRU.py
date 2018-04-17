@@ -160,6 +160,7 @@ def GRUClassifier(X,Y):
 	X_train = t.texts_to_sequences(X_train)
 	max_length = max([len(s.split()) for s in X])
 	X_train_reshaped = pad_sequences(X_train, maxlen=max_length, padding='post')
+	
 	embeddings_index = dict()
 	f = open('glove.twitter.27B.200d.txt')
 	for line in f:
@@ -225,12 +226,13 @@ def RNNClassifier(X,Y):
 			embedding_matrix[i] = embedding_vector
 	
 	#sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-	adam = optimizers.Adam(lr=0.0001)
+	#adam = optimizers.Adam(lr=0.0001)
 	embedding_layer = Embedding(vocab_size, 200, weights=[embedding_matrix], input_length=max_length, trainable=False) #################
 	sequence_input = Input(shape=(max_length,), dtype='int32')
 	embedded_sequences = embedding_layer(sequence_input)
-	l_lstm = Bidirectional(LSTM(100))(embedded_sequences)
-	preds = Dense(2, activation='softmax')(l_lstm)
+	l_lstm = Bidirectional(LSTM(100, return_sequences=True))(embedded_sequences)
+	l_att = AttentionWithContext()(l_lstm)
+	preds = Dense(2, activation='softmax')(l_att)
 	model = Model(sequence_input, preds)
 	#model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['acc'])
 	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
@@ -302,7 +304,7 @@ def identity(x):
 	
 def main():
 	X, Y = read_corpus('Traindata/en/traindataEnglish2018.txt')
-	loss, accuracy = GRUClassifier(X,Y)
+	loss, accuracy = RNNClassifier(X,Y)
 	print(loss, accuracy)
 	#print("Accuracy English: " + str(resultEn))
 	#X, Y = read_corpus('Traindata/spa/traindataSpanish2018.txt')
