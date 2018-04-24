@@ -20,6 +20,7 @@ from keras import optimizers
 from keras.regularizers import Regularizer
 from keras.utils.np_utils import to_categorical
 import numpy as np
+import sys
 
 class AttentionWithContext(Layer):
     """
@@ -144,7 +145,7 @@ def read_corpus(corpus_file):
 				except:
 					continue
 	f.close()						
-	print("read corpus")
+	print("Read corpus")
 	return documents, labels
 	
 
@@ -196,7 +197,7 @@ def GRUClassifier(X,Y):
 
 	return loss, accuracy
 
-def RNNClassifier(X,Y):
+def RNNClassifier(X,Y,lang):
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
 	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
 	y_train_reshaped = to_categorical(np.asarray(y_train_reshaped))
@@ -211,13 +212,33 @@ def RNNClassifier(X,Y):
 	X_train_reshaped = pad_sequences(X_train, maxlen=max_length, padding='post')
 	
 	embeddings_index = dict()
-	f = open('glove.twitter.27B.200d.txt')
-	for line in f:
-		values = line.split()
-		word = values[0]
-		coefs = np.asarray(values[1:], dtype='float32')
-		embeddings_index[word] = coefs
-	f.close()
+	if lang == "en":
+		f = open('glove.twitter.27B.200d.txt')
+		for line in f:
+			values = line.split()
+			word = values[0]
+			coefs = np.asarray(values[1:], dtype='float32')
+			embeddings_index[word] = coefs
+		f.close()
+	if lang == "es":
+		f = open('trained_emb_mc5_s200_win40_sg0.txt.csv')
+		for line in f:
+			if len(line.split()) > 150:
+				values = line.split()
+				values.insert(0, values.pop())
+				word = values[0]
+				coefs = np.asarray(values[1:], dtype='float32')
+				embeddings_index[word] = coefs
+		f.close()
+	if lang == "ar":
+		f = open('embed_AR')
+		for line in f:
+			if len(line.split()) > 150:
+				values = line.split()
+				word = values[0]
+				coefs = np.asarray(values[1:], dtype='float32')
+				embeddings_index[word] = coefs
+		f.close()
 	print('Loaded %s word vectors.' % len(embeddings_index))
 	embedding_matrix = np.zeros((vocab_size, 200)) #################################################33
 	for word, i in t.word_index.items():
@@ -303,16 +324,23 @@ def identity(x):
 	
 	
 def main():
-	X, Y = read_corpus('Traindata/en/traindataEnglish2018.txt')
-	loss, accuracy = RNNClassifier(X,Y)
-	print(loss, accuracy)
-	#print("Accuracy English: " + str(resultEn))
-	#X, Y = read_corpus('Traindata/spa/traindataSpanish2018.txt')
-	#resultSpa = CNNClassifier(X,Y)
-	#print("Accuracy Spanish: " + str(resultSpa))
-	#X, Y = read_corpus('Traindata/arab/traindataArabic2018.txt')
-	#resultAr = CNNClassifier(X,Y)
-	#print("Accuracy Arabic: " + str(resultAr))
+	try:
+		if sys.argv[1] == "en":
+			X, Y = read_corpus('Traindata/en/traindataEnglish2018.txt')
+			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
+			print(loss, accuracy)
+		if sys.argv[1] == "es":
+			X, Y = read_corpus('Traindata/spa/traindataSpanish2018.txt')
+			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
+			print(loss, accuracy)
+		if sys.argv[1] == "ar":
+			X, Y = read_corpus('Traindata/arab/traindataArabic2018.txt')
+			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
+			print(loss, accuracy)
+		else:
+			print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
+	except IndexError:
+		print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
 
 if __name__ == "__main__":
 	main()	
