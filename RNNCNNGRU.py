@@ -4,6 +4,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 
+from collections import Counter
+
 
 import keras
 from keras import initializers
@@ -20,7 +22,6 @@ from keras import optimizers
 from keras.regularizers import Regularizer
 from keras.utils.np_utils import to_categorical
 import numpy as np
-import sys
 
 class AttentionWithContext(Layer):
     """
@@ -145,22 +146,31 @@ def read_corpus(corpus_file):
 				except:
 					continue
 	f.close()						
-	print("Read corpus")
+	print("read corpus")
 	return documents, labels
 	
-
-def GRUClassifier(X,Y):
-	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
+def RNNClassifier(X,Y):
+	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=42)
+	
+	c = Counter(word for x in X_train for word in x.split())
+	X_train = [' '.join(y for y in x.split() if c[y] > 1) for x in X_train] #### Words that occur more than once ( in line with best SVM last year )
+	
+	#X2, Y2 = read_corpus('Traindata/en/traindataestoenFULL.txt')
+	#X_train = X_train + X2
+	#y_train = y_train + Y2
+	
+	
 	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
 	y_train_reshaped = to_categorical(np.asarray(y_train_reshaped))
-	#y_train_reshaped = (np.asarray(y_train_reshaped)).reshape(1,len(y_train_reshaped),1)
-	#y_train_reshaped = y_train_reshaped[0]
+
 	t = Tokenizer()
 	t.fit_on_texts(X_train)
 	vocab_size = len(t.word_index) + 1
 	X_train = t.texts_to_sequences(X_train)
 	max_length = max([len(s.split()) for s in X])
 	X_train_reshaped = pad_sequences(X_train, maxlen=max_length, padding='post')
+	print("Number of unique words:", len(np.unique(np.hstack(X_train_reshaped))))
+	print(vocab_size)
 	
 	embeddings_index = dict()
 	f = open('glove.twitter.27B.200d.txt')
@@ -176,75 +186,6 @@ def GRUClassifier(X,Y):
 		embedding_vector = embeddings_index.get(word)
 		if embedding_vector is not None:
 			embedding_matrix[i] = embedding_vector
-
-	embedding_layer = Embedding(vocab_size, 200, weights=[embedding_matrix], input_length=max_length, trainable=False) #################
-	sequence_input = Input(shape=(max_length,), dtype='int32')
-	embedded_sequences = embedding_layer(sequence_input)
-	l_gru = Bidirectional(GRU(100, return_sequences=True))(embedded_sequences)
-	l_att = AttentionWithContext()(l_gru)
-	preds = Dense(2, activation='softmax')(l_att)
-	model = Model(sequence_input, preds)
-	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
-	#print(model.summary())
-	y_test_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_test]
-	y_test_reshaped = to_categorical(np.asarray(y_test_reshaped))
-	#y_test_reshaped = (np.asarray(y_test_reshaped)).reshape(1,len(y_test_reshaped),1)
-	#y_test_reshaped = y_test_reshaped[0]	
-	X_test = t.texts_to_sequences(X_test)
-	X_test_reshaped = pad_sequences(X_test, maxlen=max_length, padding='post')	
-	model.fit(X_train_reshaped, y_train_reshaped, epochs=10, batch_size=50, validation_data=(X_test_reshaped, y_test_reshaped))
-	loss, accuracy = model.evaluate(X_test_reshaped, y_test_reshaped, verbose=0)
-
-	return loss, accuracy
-
-def RNNClassifier(X,Y,lang):
-	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
-	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
-	y_train_reshaped = to_categorical(np.asarray(y_train_reshaped))
-	#y_train_reshaped = (np.asarray(y_train_reshaped)).reshape(1,len(y_train_reshaped),1)
-	#y_train_reshaped = y_train_reshaped[0]
-
-	t = Tokenizer()
-	t.fit_on_texts(X_train)
-	vocab_size = len(t.word_index) + 1
-	X_train = t.texts_to_sequences(X_train)
-	max_length = max([len(s.split()) for s in X])
-	X_train_reshaped = pad_sequences(X_train, maxlen=max_length, padding='post')
-	
-	embeddings_index = dict()
-	if lang == "en":
-		f = open('glove.twitter.27B.200d.txt')
-		for line in f:
-			values = line.split()
-			word = values[0]
-			coefs = np.asarray(values[1:], dtype='float32')
-			embeddings_index[word] = coefs
-		f.close()
-	if lang == "es":
-		f = open('trained_emb_mc5_s200_win40_sg0.txt.csv')
-		for line in f:
-			if len(line.split()) > 150:
-				values = line.split()
-				values.insert(0, values.pop())
-				word = values[0]
-				coefs = np.asarray(values[1:], dtype='float32')
-				embeddings_index[word] = coefs
-		f.close()
-	if lang == "ar":
-		f = open('embed_AR')
-		for line in f:
-			if len(line.split()) > 150:
-				values = line.split()
-				word = values[0]
-				coefs = np.asarray(values[1:], dtype='float32')
-				embeddings_index[word] = coefs
-		f.close()
-	print('Loaded %s word vectors.' % len(embeddings_index))
-	embedding_matrix = np.zeros((vocab_size, 200)) #################################################33
-	for word, i in t.word_index.items():
-		embedding_vector = embeddings_index.get(word)
-		if embedding_vector is not None:
-			embedding_matrix[i] = embedding_vector
 	
 	#sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 	#adam = optimizers.Adam(lr=0.0001)
@@ -252,6 +193,7 @@ def RNNClassifier(X,Y,lang):
 	sequence_input = Input(shape=(max_length,), dtype='int32')
 	embedded_sequences = embedding_layer(sequence_input)
 	l_lstm = Bidirectional(LSTM(100, return_sequences=True))(embedded_sequences)
+	#l_drop = Dropout(0.2)(l_lstm)
 	l_att = AttentionWithContext()(l_lstm)
 	preds = Dense(2, activation='softmax')(l_att)
 	model = Model(sequence_input, preds)
@@ -261,12 +203,10 @@ def RNNClassifier(X,Y,lang):
 	
 	y_test_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_test]
 	y_test_reshaped = to_categorical(np.asarray(y_test_reshaped))
-	#y_test_reshaped = (np.asarray(y_test_reshaped)).reshape(1,len(y_test_reshaped),1)
-	#y_test_reshaped = y_test_reshaped[0]
 	X_test = t.texts_to_sequences(X_test)
 	X_test_reshaped = pad_sequences(X_test, maxlen=max_length, padding='post')	
 	
-	model.fit(X_train_reshaped, y_train_reshaped, epochs=10, batch_size=50, validation_data=(X_test_reshaped, y_test_reshaped))
+	model.fit(X_train_reshaped, y_train_reshaped, epochs=10, batch_size=32, validation_data=(X_test_reshaped, y_test_reshaped))
 	loss, accuracy = model.evaluate(X_test_reshaped, y_test_reshaped, verbose=0)
 
 	return loss, accuracy
@@ -324,23 +264,16 @@ def identity(x):
 	
 	
 def main():
-	try:
-		if sys.argv[1] == "en":
-			X, Y = read_corpus('Traindata/en/traindataEnglish2018.txt')
-			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
-			print(loss, accuracy)
-		if sys.argv[1] == "es":
-			X, Y = read_corpus('Traindata/spa/traindataSpanish2018.txt')
-			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
-			print(loss, accuracy)
-		if sys.argv[1] == "ar":
-			X, Y = read_corpus('Traindata/arab/traindataArabic2018.txt')
-			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
-			print(loss, accuracy)
-		else:
-			print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
-	except IndexError:
-		print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
+	X, Y = read_corpus('Traindata/en/traindataEnglish2018.txt')
+	loss, accuracy = RNNClassifier(X,Y)
+	print(loss, accuracy)
+	#print("Accuracy English: " + str(resultEn))
+	#X, Y = read_corpus('Traindata/spa/traindataSpanish2018.txt')
+	#resultSpa = CNNClassifier(X,Y)
+	#print("Accuracy Spanish: " + str(resultSpa))
+	#X, Y = read_corpus('Traindata/arab/traindataArabic2018.txt')
+	#resultAr = CNNClassifier(X,Y)
+	#print("Accuracy Arabic: " + str(resultAr))
 
 if __name__ == "__main__":
 	main()	
