@@ -200,8 +200,27 @@ def GRUClassifier(X,Y):
 def RNNClassifier(X,Y,lang):
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
 	
+	################################################################################ Vergeet niet pickle en checkpoint aan te passen!
+	
+	if lang == "en":
+		X2, Y2 = read_corpus('Traindata/en/traindataSPAtoEN.txt')
+		X_train = X_train + X2
+		y_train = y_train + Y2
+	'''
+	if lang == "es":
+		X2, Y2 = read_corpus('Traindata/en/traindataENtoSPA.txt')
+		X_train = X_train + X2
+		y_train = y_train + Y2	
+	if lang == "ar":	
+		X2, Y2 = read_corpus('Traindata/en/traindataENtoAR.txt')
+		X_train = X_train + X2
+		y_train = y_train + Y2
+	'''
+	
+	####################################################################################	
 	c = Counter(word for x in X_train for word in x.split())
 	X_train = [' '.join(y for y in x.split() if c[y] > 1) for x in X_train] #### Words that occur more than once ( in line with best SVM last year )
+	
 	
 	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
 	y_train_reshaped = to_categorical(np.asarray(y_train_reshaped))
@@ -223,6 +242,9 @@ def RNNClassifier(X,Y,lang):
 	
 	embeddings_index = dict()
 	if lang == "en":
+		with open('tokenizer_EN_Translated.pickle', 'wb') as handle:
+			pickle.dump(t, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		print("Pickle made")
 		f = open('glove.twitter.27B.200d.txt')
 		for line in f:
 			values = line.split()
@@ -231,6 +253,9 @@ def RNNClassifier(X,Y,lang):
 			embeddings_index[word] = coefs
 		f.close()
 	if lang == "es":
+		with open('tokenizer_ES.pickle', 'wb') as handle:
+			pickle.dump(t, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		print("Pickle made")		
 		f = open('trained_emb_mc5_s200_win40_sg0.txt.csv')
 		for line in f:
 			if len(line.split()) > 150:
@@ -241,6 +266,9 @@ def RNNClassifier(X,Y,lang):
 				embeddings_index[word] = coefs
 		f.close()
 	if lang == "ar":
+		with open('tokenizer_AR.pickle', 'wb') as handle:
+			pickle.dump(t, handle, protocol=pickle.HIGHEST_PROTOCOL)
+		print("Pickle made")	
 		f = open('embed_AR')
 		for line in f:
 			if len(line.split()) > 150:
@@ -267,7 +295,7 @@ def RNNClassifier(X,Y,lang):
 	preds = Dense(2, activation='softmax')(l_att)
 	model = Model(sequence_input, preds)
 	#model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['acc'])
-	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['acc'])
+	model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['acc'])
 	print(model.summary())
 	
 	y_test_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_test]
@@ -278,9 +306,9 @@ def RNNClassifier(X,Y,lang):
 	X_test_reshaped = pad_sequences(X_test, maxlen=max_length, padding='post')	
 	
 	# define the checkpoint
-	#filepath = "model_EN.h5"
-	#checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
-	#callbacks_list = [checkpoint]
+	filepath = "model_EN_Translated.h5"
+	checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+	callbacks_list = [checkpoint]
 	
 	model.fit(X_train_reshaped, y_train_reshaped, epochs=20, batch_size=32, validation_data=(X_test_reshaped, y_test_reshaped), callbacks=callbacks_list)
 	loss, accuracy = model.evaluate(X_test_reshaped, y_test_reshaped, verbose=0)
