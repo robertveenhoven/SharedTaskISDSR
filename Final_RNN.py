@@ -351,9 +351,9 @@ def main():
 			loss, accuracy = RNNClassifier(X,Y,sys.argv[1])
 			print(loss, accuracy)
 		else:
-			print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
+			print("Execute as follows: python3 Final_RNN.PY en/es/ar")
 	except IndexError:
-		print("Execute as follows: python3 RNNCNNGRU.PY en/es/ar")
+		print("Execute as follows: python3 Final_RNN.PY en/es/ar")
 
 if __name__ == "__main__":
 	main()	
