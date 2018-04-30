@@ -10,7 +10,7 @@ from keras import regularizers
 from keras import constraints
 from keras import backend as K
 from keras.engine.topology import Layer, InputSpec
-from keras.models import Sequential, Model
+from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, LSTM, MaxPool1D, Flatten, Input, Bidirectional, TimeDistributed, Embedding, GlobalMaxPooling1D, GRU, Merge
 from keras.layers.convolutional import MaxPooling1D, Conv1D
 from keras.preprocessing.sequence import pad_sequences
@@ -18,9 +18,11 @@ from keras.preprocessing.text import Tokenizer
 from keras import optimizers
 from keras.regularizers import Regularizer
 from keras.utils.np_utils import to_categorical
+from keras.callbacks import ModelCheckpoint
 
-import numpy as np
+from collections import Counter
 import pickle
+import numpy as np
 import sys
 
 class AttentionWithContext(Layer):
@@ -146,7 +148,7 @@ def read_corpus(corpus_file):
 	f.close()						
 	print("Read corpus")
 	return documents, labels
-	
+
 def GRUClassifier(X,Y):
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
 	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
@@ -197,11 +199,15 @@ def GRUClassifier(X,Y):
 
 def RNNClassifier(X,Y,lang):
 	X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.20, random_state=0)
+	
+	c = Counter(word for x in X_train for word in x.split())
+	X_train = [' '.join(y for y in x.split() if c[y] > 1) for x in X_train] #### Words that occur more than once ( in line with best SVM last year )
+	
 	y_train_reshaped = [1 if tmp_y=='male' else 0 for tmp_y in y_train]
 	y_train_reshaped = to_categorical(np.asarray(y_train_reshaped))
 	#y_train_reshaped = (np.asarray(y_train_reshaped)).reshape(1,len(y_train_reshaped),1)
 	#y_train_reshaped = y_train_reshaped[0]
-
+	
 	t = Tokenizer()
 	t.fit_on_texts(X_train)
 	vocab_size = len(t.word_index) + 1
@@ -244,19 +250,20 @@ def RNNClassifier(X,Y,lang):
 				embeddings_index[word] = coefs
 		f.close()
 	print('Loaded %s word vectors.' % len(embeddings_index))
-	embedding_matrix = np.zeros((vocab_size, 200)) #################################################33
+	embedding_matrix = np.zeros((vocab_size, 200)) #################################################
 	for word, i in t.word_index.items():
 		embedding_vector = embeddings_index.get(word)
 		if embedding_vector is not None:
 			embedding_matrix[i] = embedding_vector
 	
 	#sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-	#adam = optimizers.Adam(lr=0.0001)
-	embedding_layer = Embedding(vocab_size, 200, weights=[embedding_matrix], input_length=max_length, trainable=False) #################
+	adam = optimizers.Adam(lr=0.0001)
+	embedding_layer = Embedding(vocab_size, 200, weights=[embedding_matrix], input_length=max_length, trainable=False, mask_zero = True) #################
 	sequence_input = Input(shape=(max_length,), dtype='int32')
 	embedded_sequences = embedding_layer(sequence_input)
 	l_lstm = Bidirectional(LSTM(100, return_sequences=True))(embedded_sequences)
-	l_att = AttentionWithContext()(l_lstm)
+	l_drop = Dropout(0.5)(l_lstm)
+	l_att = AttentionWithContext()(l_drop)
 	preds = Dense(2, activation='softmax')(l_att)
 	model = Model(sequence_input, preds)
 	#model.compile(loss='binary_crossentropy', optimizer=adam, metrics=['acc'])
@@ -270,7 +277,12 @@ def RNNClassifier(X,Y,lang):
 	X_test = t.texts_to_sequences(X_test)
 	X_test_reshaped = pad_sequences(X_test, maxlen=max_length, padding='post')	
 	
-	model.fit(X_train_reshaped, y_train_reshaped, epochs=10, batch_size=50, validation_data=(X_test_reshaped, y_test_reshaped))
+	# define the checkpoint
+	#filepath = "model_EN.h5"
+	#checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
+	#callbacks_list = [checkpoint]
+	
+	model.fit(X_train_reshaped, y_train_reshaped, epochs=20, batch_size=32, validation_data=(X_test_reshaped, y_test_reshaped), callbacks=callbacks_list)
 	loss, accuracy = model.evaluate(X_test_reshaped, y_test_reshaped, verbose=0)
 
 	return loss, accuracy
@@ -323,7 +335,7 @@ def CNNClassifier(X,Y):
 
 def identity(x):
 	return x
-
+	
 def main():
 	try:
 		if sys.argv[1] == "en":
