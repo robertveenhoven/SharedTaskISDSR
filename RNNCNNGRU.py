@@ -4,7 +4,6 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 
-
 import keras
 from keras import initializers
 from keras import regularizers
@@ -19,7 +18,9 @@ from keras.preprocessing.text import Tokenizer
 from keras import optimizers
 from keras.regularizers import Regularizer
 from keras.utils.np_utils import to_categorical
+
 import numpy as np
+import pickle
 import sys
 
 class AttentionWithContext(Layer):
@@ -210,6 +211,12 @@ def RNNClassifier(X,Y,lang):
 	X_train = t.texts_to_sequences(X_train)
 	max_length = max([len(s.split()) for s in X])
 	X_train_reshaped = pad_sequences(X_train, maxlen=max_length, padding='post')
+	
+	"""
+	with open('tokenizer_EN.pickle', 'wb') as handle:
+		pickle.dump(t, handle, protocol=pickle.HIGHEST_PROTOCOL)
+	print("Pickle made")
+	"""
 	
 	embeddings_index = dict()
 	if lang == "en":
