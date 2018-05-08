@@ -179,7 +179,7 @@ def main(argv):
 				textuser += processed + ' '
 			ESlist.append(textuser)
 			ESlist = t.texts_to_sequences(ESlist)
-			ESlist_reshaped = pad_sequences(ESlist, maxlen=1745, padding='post')
+			ESlist_reshaped = pad_sequences(ESlist, maxlen=1898, padding='post')
 			score = model_ES.predict(ESlist_reshaped)
 			classPredict = np.argmax(score, axis=1)
 			if classPredict == [0]:
@@ -213,7 +213,7 @@ def main(argv):
 				textuser += processed + ' '
 			ARlist.append(textuser)
 			ARlist = t.texts_to_sequences(ARlist)
-			ARlist_reshaped = pad_sequences(ARlist, maxlen=1745, padding='post')
+			ARlist_reshaped = pad_sequences(ARlist, maxlen=4795, padding='post')
 			score = model_AR.predict(ARlist_reshaped)
 			classPredict = np.argmax(score, axis=1)
 			if classPredict == [0]:
