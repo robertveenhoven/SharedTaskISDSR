@@ -128,114 +128,109 @@ def main(argv):
 	model_ES = load_model("model_ES.h5", custom_objects={'AttentionWithContext':AttentionWithContext}) # !
 	model_AR = load_model("model_AR.h5", custom_objects={'AttentionWithContext':AttentionWithContext}) # !
 	
-	wcount = 1
-	inputDir = sys.argv[1]
-	for x in os.listdir(inputDir):
-		workfile = open(os.path.join(inputDir,x),'r')
-		tree = ET.parse(workfile)
-		root = tree.getroot()
-		language=root.attrib['lang']
-		if language == 'en':
-			textuser = ''
-			ENlist = []
-			with open('tokenizer_EN.pickle', 'rb') as handle: # !
-				t = pickle.load(handle)
-			for elem in root.findall('documents/document'):
-				processed = preProcess3(elem.text, 'english')
-				textuser += processed + ' '
-			ENlist.append(textuser)
-			ENlist = t.texts_to_sequences(ENlist)
-			ENlist_reshaped = pad_sequences(ENlist, maxlen=1745, padding='post')
-			score = model_EN.predict(ENlist_reshaped)
-			classPredict = np.argmax(score, axis=1)
-			if classPredict == [0]:
-				entry = "female"
-			elif classPredict == [1]:
-				entry = "male"
-			authorID = x.split('.')[0]
-			out = tostring(E.author(id=authorID,
-							lang=language,
-							gender_txt=entry)).decode()
-			parsestring = 'EN_output/result_'+authorID+'.xml'
-			if os.path.isdir('EN_output') == True:
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
-			else:
-				os.makedirs('EN_output')
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
-				
-		if language == 'es':
-			textuser = ''
-			ESlist = []
-			with open('tokenizer_ES.pickle', 'rb') as handle: # !
-				t = pickle.load(handle)
-			for elem in root.findall('documents/document'):
-				processed = preProcess3(elem.text, 'spanish')
-				textuser += processed + ' '
-			ESlist.append(textuser)
-			ESlist = t.texts_to_sequences(ESlist)
-			ESlist_reshaped = pad_sequences(ESlist, maxlen=1898, padding='post')
-			score = model_ES.predict(ESlist_reshaped)
-			classPredict = np.argmax(score, axis=1)
-			if classPredict == [0]:
-				entry = "female"
-			elif classPredict == [1]:
-				entry = "male"
-			authorID = x.split('.')[0]
-			out = tostring(E.author(id=authorID,
-							lang=language,
-							gender_txt=entry)).decode()
-			parsestring = 'ES_output/result_'+authorID+'.xml'
-			if os.path.isdir('ES_output') == True:
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
-			else:
-				os.makedirs('ES_output')
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
-		
-		if language == 'ar':
-			textuser = ''
-			ARlist = []
-			with open('tokenizer_AR.pickle', 'rb') as handle: # !
-				t = pickle.load(handle)
-			for elem in root.findall('documents/document'):
-				processed = preProcess3(elem.text, 'arabic')
-				textuser += processed + ' '
-			ARlist.append(textuser)
-			ARlist = t.texts_to_sequences(ARlist)
-			ARlist_reshaped = pad_sequences(ARlist, maxlen=4795, padding='post')
-			score = model_AR.predict(ARlist_reshaped)
-			classPredict = np.argmax(score, axis=1)
-			if classPredict == [0]:
-				entry = "female"
-			elif classPredict == [1]:
-				entry = "male"
-			authorID = x.split('.')[0]
-			out = tostring(E.author(id=authorID,
-							lang=language,
-							gender_txt=entry)).decode()
-			parsestring = 'AR_output/result_'+authorID+'.xml'
-			if os.path.isdir('AR_output') == True:
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
-			else:
-				os.makedirs('AR_output')
-				with open(parsestring, 'w') as fwrite:
-					fwrite.write(out)
-				print("Written", wcount)
-				wcount += 1
+	langOptions = ['ar','en','es']
+	for y in langOptions:
+		inputDir = os.path.join(sys.argv[1],y,'text')
+		for x in os.listdir(inputDir):
+			workfile = open(os.path.join(inputDir,x),'r')
+			tree = ET.parse(workfile)
+			root = tree.getroot()
+			language=root.attrib['lang']
+			if language == 'en':
+				textuser = ''
+				ENlist = []
+				with open('tokenizer_EN.pickle', 'rb') as handle: # !
+					t = pickle.load(handle)
+				for elem in root.findall('documents/document'):
+					processed = preProcess3(elem.text, 'english')
+					textuser += processed + ' '
+				ENlist.append(textuser)
+				ENlist = t.texts_to_sequences(ENlist)
+				ENlist_reshaped = pad_sequences(ENlist, maxlen=1745, padding='post')
+				score = model_EN.predict(ENlist_reshaped)
+				classPredict = np.argmax(score, axis=1)
+				if classPredict == [0]:
+					entry = "female"
+				elif classPredict == [1]:
+					entry = "male"
+				authorID = x.split('.')[0]
+				out = tostring(E.author(id=authorID,
+								lang=language,
+								gender_txt=entry)).decode()
+				parsestring = 'EN_output/result_'+authorID+'.xml'
+				if os.path.isdir('EN_output') == True:
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
+				else:
+					os.makedirs('EN_output')
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
+					
+			if language == 'es':
+				textuser = ''
+				ESlist = []
+				with open('tokenizer_ES.pickle', 'rb') as handle: # !
+					t = pickle.load(handle)
+				for elem in root.findall('documents/document'):
+					processed = preProcess3(elem.text, 'spanish')
+					textuser += processed + ' '
+				ESlist.append(textuser)
+				ESlist = t.texts_to_sequences(ESlist)
+				ESlist_reshaped = pad_sequences(ESlist, maxlen=1898, padding='post')
+				score = model_ES.predict(ESlist_reshaped)
+				classPredict = np.argmax(score, axis=1)
+				if classPredict == [0]:
+					entry = "female"
+				elif classPredict == [1]:
+					entry = "male"
+				authorID = x.split('.')[0]
+				out = tostring(E.author(id=authorID,
+								lang=language,
+								gender_txt=entry)).decode()
+				parsestring = 'ES_output/result_'+authorID+'.xml'
+				if os.path.isdir('ES_output') == True:
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
+				else:
+					os.makedirs('ES_output')
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
+			
+			if language == 'ar':
+				textuser = ''
+				ARlist = []
+				with open('tokenizer_AR.pickle', 'rb') as handle: # !
+					t = pickle.load(handle)
+				for elem in root.findall('documents/document'):
+					processed = preProcess3(elem.text, 'arabic')
+					textuser += processed + ' '
+				ARlist.append(textuser)
+				ARlist = t.texts_to_sequences(ARlist)
+				ARlist_reshaped = pad_sequences(ARlist, maxlen=4795, padding='post')
+				score = model_AR.predict(ARlist_reshaped)
+				classPredict = np.argmax(score, axis=1)
+				if classPredict == [0]:
+					entry = "female"
+				elif classPredict == [1]:
+					entry = "male"
+				authorID = x.split('.')[0]
+				out = tostring(E.author(id=authorID,
+								lang=language,
+								gender_txt=entry)).decode()
+				parsestring = 'AR_output/result_'+authorID+'.xml'
+				if os.path.isdir('AR_output') == True:
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
+				else:
+					os.makedirs('AR_output')
+					with open(parsestring, 'w') as fwrite:
+						fwrite.write(out)
+					print("Written", wcount)
 
 if __name__ == "__main__":
 	main(sys.argv)
